@@ -10,16 +10,23 @@
 import f90nml
 
 class NemoNamelist:
-    def __init__(self, namelist_path):
+    def __init__(self, namelist_path, label=None):
         self.namelist_path = namelist_path
         self.namelist = f90nml.read(namelist_path)
+        self.label = label
 
-    def compare(self: 'NemoNamelist', reference: 'NemoNamelist'):
-        print("keys only in self")
-        for key in self.namelist.todict().keys():
+    def diff(self: 'NemoNamelist', reference: 'NemoNamelist'):
+        if self.label:
+            print("keys only in " + self.label)
+        else:
+            print("keys only in self")
+        for key in self.namelist.todVict().keys():
             if key not in reference.namelist.todict().keys():
                 print(f"\t: {key}")
-        print("keys only in reference")
+        if reference.label:
+            print("keys only in " + reference.label)
+        else:
+            print("keys only in reference")
         for key in reference.namelist.todict().keys():
             if key not in self.namelist.todict().keys():
                 print(f"\t: {key}")
