@@ -1,13 +1,60 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+#!/bin/env python3
+#                                                     .-"``"-.
+#                                                    /______; \
+#                                                   {_______}\|
+#                                                   (/ a a \)(_)
+#                                                   (.-.).-.)
+#     ________________________________________ooo__(    ^    )___________________________________________
+#    /                                              '-.___.-'                                            \
+#   | Usage                                                                                               |
+#   | ==================                                                                                  |
+#   |                                                                                                     |
+#   | (1) First create instances of NemoNamelist for the namelists to compare:                            |
+#   |                                                                                                     |
+#   |     >>> nml_a = NemoNamelist(<path to namelist A>,<label for namelist A>)                           |
+#   |                                                                                                     |
+#   |     >>> nml_b = NemoNamelist(<path to namelist B>,<label for namelist B>)                           |
+#   |                                                                                                     |
+#   | (2) Create a diff from namelist A to B (what changed in B from A):                                  |
+#   |                                                                                                     |
+#   |     >>> dd_A_B = nml_a.diff(nml_b)                                                                  |
+#   |                                                                                                     |
+#   | (3) Apply the diff to namelist A                                                                    |
+#   |                                                                                                     |
+#   |     >>> nml_a.apply(dd_A_B)                                                                         |
+#   |                                                                                                     |
+#   | (4) Write the updated namelist                                                                      |
+#   |                                                                                                     |
+#   |     >>> nml_a.write()                                                                               |
+#   |                                                                                                     |
+#   |     (no worries, the old namelist is copied to '<namlist path>.bak' before the changes are applied) |
+#   |                                                                                                     |
+#   | note:                                                                                               |
+#   |                                                                                                     |
+#   |   NemoNamelist.diff() returns a dictionary with the following keys:                                 |
+#   |                                                                                                     |
+#   |   - 'A'             : label of namelist A                                                           |
+#   |   - 'B'             : label of namelist B                                                           |
+#   |   - 'A:unique_p1'   : unique keys in A for depth=1                                                  |
+#   |   - 'A:unique_p2'   : unique keys in A for depth=2                                                  |
+#   |   - 'B:unique_p1'   : unique keys in B for depth=1                                                  |
+#   |   - 'B:unique_p2'   : unique keys in B for depth=2                                                  |
+#   |   - 'identical_p1'  : shared keys of A,B for depth=1                                                |
+#   |   - 'identical_p2'  : shared keys of A,B for depth=2                                                |
+#   |                                                                                                     |
+#   |   - 'diff'          : different values for identical keys                                           |
+#   |   - 'same'          : equal values for identical keys                                               |
+#    \________________________________________________________ooo________________________________________/
+#                                                  |_  |  _|  jgs
+#                                                  \___|___/
+#                                                  {___|___}
+#                                                   |_ | _|
+#                                                   /-'Y'-\
+#                                                  (__/ \__)
 
 import f90nml
-
-base_dir = "/home/kkeller/BSC/EarthScience/Projects/DestinationEarth_ECMWF/Lab/Nemo/DE_340_issue_152/"
-v40_namelist_dir = "namelists_v40/"
-v42_namelist_dir = "namelists_v42/"
+import shutil
+import os.path
 
 
 def check_key(dict, key, mode):
@@ -21,11 +68,12 @@ def check_key(dict, key, mode):
 
 class NemoNamelist:
     def __init__(self,
-                 namelist_path,
+                 namelist_path="",
                  label=None,
-                 verbose=False):
+                 verbose=False,
+                 ):
         self.namelist_path = namelist_path
-        self.namelist = f90nml.read(namelist_path)
+        self.namelist = f90nml.read(self.namelist_path)
         self.label = label
         self.verbose = verbose
 
@@ -172,8 +220,28 @@ class NemoNamelist:
                     else:
                         self.namelist[p1key][p2key] = diff_dict['diff'][p1key][p2key][1]
 
-# Press the green button in the gutter to run the script.
+    def write(self, out=None):
+
+        # make a backup of old namelists
+        src = self.namelist_path
+
+        if out is None:
+            out = src
+
+        cpy = out
+
+        for i in range(11):
+            if i == 10:
+                print(f"ERROR: too many copies [{i}]")
+                return
+            if os.path.isfile(cpy):
+                cpy = cpy + ".bak"
+            else:
+                break
+        shutil.copy(src, cpy)
+
+        # write namelist
+        self.namelist.write(out,force=True)
+
 if __name__ == '__main__':
     pass
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
