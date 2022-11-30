@@ -55,7 +55,7 @@
 import f90nml
 import shutil
 import os.path
-
+import json
 
 def check_key(dict, key, mode):
     res = True
@@ -134,8 +134,10 @@ class NemoNamelist:
                     ikeys.append(ckey)
             check_key(diff_dict, 'A:unique_p2', 'create')
             check_key(diff_dict, 'identical_p2', 'create')
-            diff_dict['A:unique_p2'][p1key] = ukeys
-            diff_dict['identical_p2'][p1key] = ikeys
+            if len(ukeys) > 0:
+                diff_dict['A:unique_p2'][p1key] = ukeys
+            if len(ikeys) > 0:
+                diff_dict['identical_p2'][p1key] = ikeys
 
             # identify unique key in children for B
             self.print_out("sub-keys for '" + p1key + "' only in " + nml_b)
@@ -145,9 +147,12 @@ class NemoNamelist:
                     ukeys.append(ckey)
                     self.print_out(f"\t\t{p1key}: {ckey}")
             check_key(diff_dict, 'B:unique_p2', 'create')
-            diff_dict['B:unique_p2'][p1key] = ukeys
+            if len(ukeys) > 0:
+                diff_dict['B:unique_p2'][p1key] = ukeys
 
             # identify unique and equal keys in second level
+            if p1key not in diff_dict['identical_p2']:
+                continue
             for p2key in diff_dict['identical_p2'][p1key]:
                 if(type(self.namelist[p1key][p2key]) is f90nml.Namelist):
                     self.print_out("sub-sub-keys for '" + p1key + " -> " + p2key + "' only in " + nml_a)
@@ -163,8 +168,10 @@ class NemoNamelist:
                     check_key(diff_dict, 'identical_p3', 'create')
                     check_key(diff_dict['A:unique_p3'], p1key, 'create')
                     check_key(diff_dict['identical_p3'], p1key, 'create')
-                    diff_dict['A:unique_p3'][p1key][p2key] = ukeys
-                    diff_dict['identical_p3'][p1key][p2key] = ikeys
+                    if len(ukeys) > 0:
+                        diff_dict['A:unique_p3'][p1key][p2key] = ukeys
+                    if len(ikeys) > 0:
+                        diff_dict['identical_p3'][p1key][p2key] = ikeys
 
                 if(type(reference.namelist[p1key][p2key]) is f90nml.Namelist):
                     self.print_out("sub-sub-keys for '" + p1key + " -> " + p2key + "' only in " + nml_b)
@@ -178,31 +185,32 @@ class NemoNamelist:
                             ikeys.append(ckey)
                     check_key(diff_dict, 'B:unique_p3', 'create')
                     check_key(diff_dict['B:unique_p3'], p1key, 'create')
-                    diff_dict['B:unique_p3'][p1key][p2key] = ukeys
+                    if len(ukeys) > 0:
+                        diff_dict['B:unique_p3'][p1key][p2key] = ukeys
 
-            # compare settings
-            diff_dict['diff'] = {}
-            diff_dict['same'] = {}
-            for p1key in diff_dict['identical_p2'].keys():
-                for p2key in diff_dict['identical_p2'][p1key]:
-                    if type(self.namelist[p1key][p2key]) is f90nml.Namelist:
-                        for p3key in diff_dict['identical_p3'][p1key][p2key]:
-                            if self.namelist[p1key][p2key][p3key] != reference.namelist[p1key][p2key][p3key]:
-                                check_key(diff_dict['diff'], p1key, 'create')
-                                check_key(diff_dict['diff'][p1key], p2key, 'create')
-                                diff_dict['diff'][p1key][p2key][p3key] = [self.namelist[p1key][p2key][p3key],
-                                                                          reference.namelist[p1key][p2key][p3key]]
-                            else:
-                                check_key(diff_dict['same'], p1key, 'create')
-                                check_key(diff_dict['same'][p1key], p2key, 'create')
-                                diff_dict['same'][p1key][p2key][p3key] = self.namelist[p1key][p2key][p3key]
-                    else:
-                        if self.namelist[p1key][p2key] != reference.namelist[p1key][p2key]:
+        # compare settings
+        diff_dict['diff'] = {}
+        diff_dict['same'] = {}
+        for p1key in diff_dict['identical_p2'].keys():
+            for p2key in diff_dict['identical_p2'][p1key]:
+                if type(self.namelist[p1key][p2key]) is f90nml.Namelist:
+                    for p3key in diff_dict['identical_p3'][p1key][p2key]:
+                        if self.namelist[p1key][p2key][p3key] != reference.namelist[p1key][p2key][p3key]:
                             check_key(diff_dict['diff'], p1key, 'create')
-                            diff_dict['diff'][p1key][p2key] = [self.namelist[p1key][p2key],reference.namelist[p1key][p2key]]
+                            check_key(diff_dict['diff'][p1key], p2key, 'create')
+                            diff_dict['diff'][p1key][p2key][p3key] = [self.namelist[p1key][p2key][p3key],
+                                                                      reference.namelist[p1key][p2key][p3key]]
                         else:
                             check_key(diff_dict['same'], p1key, 'create')
-                            diff_dict['same'][p1key][p2key] = self.namelist[p1key][p2key]
+                            check_key(diff_dict['same'][p1key], p2key, 'create')
+                            diff_dict['same'][p1key][p2key][p3key] = self.namelist[p1key][p2key][p3key]
+                else:
+                    if self.namelist[p1key][p2key] != reference.namelist[p1key][p2key]:
+                        check_key(diff_dict['diff'], p1key, 'create')
+                        diff_dict['diff'][p1key][p2key] = [self.namelist[p1key][p2key],reference.namelist[p1key][p2key]]
+                    else:
+                        check_key(diff_dict['same'], p1key, 'create')
+                        diff_dict['same'][p1key][p2key] = self.namelist[p1key][p2key]
 
         return diff_dict
 
@@ -223,12 +231,10 @@ class NemoNamelist:
     def write(self, out=None):
 
         # make a backup of old namelists
-        src = self.namelist_path
-
         if out is None:
-            out = src
+            out = self.namelist_path
 
-        cpy = out
+        cpy = out + ".bak"
 
         for i in range(11):
             if i == 10:
@@ -238,10 +244,10 @@ class NemoNamelist:
                 cpy = cpy + ".bak"
             else:
                 break
-        shutil.copy(src, cpy)
+        shutil.copy(out, cpy)
 
         # write namelist
-        self.namelist.write(out,force=True)
+        self.namelist.write(out, force=True)
 
 if __name__ == '__main__':
     pass
