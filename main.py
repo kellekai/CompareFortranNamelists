@@ -244,6 +244,7 @@ class NemoNamelist:
                 cpy = cpy + ".bak"
             else:
                 break
+        printf(f"copy {out} to {cpy}")
         shutil.copy(out, cpy)
 
         # write namelist
