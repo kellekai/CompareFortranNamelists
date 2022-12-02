@@ -27,6 +27,10 @@
 #   |                                                                                                     |
 #   |     >>> nml_a.write()                                                                               |
 #   |                                                                                                     |
+#   |     if the comments shall be preserved, do:                                                         |
+#   |                                                                                                     |
+#   |     >>> nml_a.write( patch=True )                                                                   |
+#   |                                                                                                     |
 #   |     (no worries, the old namelist is copied to '<namlist path>.bak' before the changes are applied) |
 #   |                                                                                                     |
 #   | note:                                                                                               |
@@ -228,7 +232,7 @@ class NemoNamelist:
                     else:
                         self.namelist[p1key][p2key] = diff_dict['diff'][p1key][p2key][1]
 
-    def write(self, out=None):
+    def write(self, out=None, patch=False):
 
         # make a backup of old namelists
         if out is None:
@@ -248,7 +252,10 @@ class NemoNamelist:
         shutil.copy(out, cpy)
 
         # write namelist
-        self.namelist.write(out, force=True)
+        if patch:
+            f90nml.patch(cpy, self.namelist, out)
+        else:
+            self.namelist.write(out, force=True)
 
 if __name__ == '__main__':
     pass
