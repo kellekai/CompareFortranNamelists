@@ -253,7 +253,7 @@ class NemoNamelist:
 
         # write namelist
         if patch:
-            f90nml.patch(cpy, self.namelist, out)
+            f90nml.patch(self.namelist_path, self.namelist, out)
         else:
             self.namelist.write(out, force=True)
 
