@@ -59,6 +59,7 @@
 import f90nml
 import shutil
 import os.path
+import uuid
 import json
 
 def check_key(dict, key, mode):
@@ -238,14 +239,14 @@ class NemoNamelist:
         if out is None:
             out = self.namelist_path
 
-        cpy = out + ".bak"
-
-        for i in range(11):
-            if i == 10:
+        _cpy = out
+        cpy = _cpy + ".0.bak"
+        for i in range(1001):
+            if i == 1000:
                 print(f"ERROR: too many copies [{i}]")
                 return
             if os.path.isfile(cpy):
-                cpy = cpy + ".bak"
+                cpy = _cpy + f".{i+1}.bak"
             else:
                 break
         print(f"copy {out} to {cpy}")
@@ -253,7 +254,13 @@ class NemoNamelist:
 
         # write namelist
         if patch:
-            f90nml.patch(self.namelist_path, self.namelist, out)
+            if out == self.namelist_path:
+                tmp_fn = str(uuid.uuid4())
+                f90nml.patch(self.namelist_path, self.namelist, tmp_fn)
+                os.remove(self.namelist_path)
+                os.rename(tmp_fn, self.namelist_path)
+            else:
+                f90nml.patch(self.namelist_path, self.namelist, out)
         else:
             self.namelist.write(out, force=True)
 
