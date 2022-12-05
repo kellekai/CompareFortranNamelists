@@ -1,0 +1,7 @@
+.idea
+# Python tmp files
+__pycache__
+
+# Outputs
+*.json
+*.odt
